@@ -1,1 +1,1 @@
-worker: npm start
+worker: bun run index.ts
