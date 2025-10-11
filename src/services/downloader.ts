@@ -23,6 +23,9 @@ export class DownloadService {
       }
 
       const [, username, storyIdStr] = match;
+      if (!username || !storyIdStr) {
+        throw new Error('Invalid story URL format');
+      }
       const storyId = parseInt(storyIdStr);
 
       // Get user/channel entity
@@ -70,7 +73,7 @@ export class DownloadService {
         const match = channelUrl.match(/\/c\/(\d+)(?:\/(\d+))?/);
         if (!match) throw new Error('Invalid private channel URL');
 
-        const channelId = BigInt('-100' + match[1]);
+        const channelId = parseInt('-100' + match[1]);
         msgId = msgId || (match[2] ? parseInt(match[2]) : undefined);
         channel = await client.getEntity(channelId);
       } else {
@@ -79,6 +82,7 @@ export class DownloadService {
         if (!match) throw new Error('Invalid channel URL');
 
         const username = match[1];
+        if (!username) throw new Error('Invalid channel URL');
         msgId = msgId || (match[2] ? parseInt(match[2]) : undefined);
         channel = await client.getEntity(username);
       }
@@ -97,7 +101,7 @@ export class DownloadService {
       const message = messages[0];
 
       // Download media from message
-      if (message.media) {
+      if (message && message.media) {
         const fileName = `channel_${Date.now()}`;
         const filePath = await this.downloadMedia(client, message.media, fileName);
         return filePath;

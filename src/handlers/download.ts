@@ -3,7 +3,6 @@ import { SessionManager } from '../utils/session-manager';
 import { DownloadService } from '../services/downloader';
 import { SubscriptionService } from '../services/subscription';
 import * as fs from 'fs';
-import { Api } from 'telegram';
 
 // Store user's download state
 interface DownloadState {
@@ -27,6 +26,7 @@ export class DownloadHandler {
     if (!ctx.from || !ctx.message || !('text' in ctx.message)) return;
 
     const userId = ctx.from.id;
+    if (!ctx.message.text) return;
     const args = ctx.message.text.split(' ');
 
     if (args.length < 2) {
@@ -39,7 +39,11 @@ export class DownloadHandler {
       return;
     }
 
-    const storyUrl = args[1].trim();
+    const storyUrl = args[1]?.trim();
+    if (!storyUrl) {
+      await ctx.reply('❌ Неверная ссылка на историю.');
+      return;
+    }
 
     // Check if user is authenticated for private stories
     const client = await this.sessionManager.getClient(userId);
@@ -120,8 +124,9 @@ export class DownloadHandler {
       const channels = dialogs.filter((dialog) => {
         const entity = dialog.entity;
         return (
-          entity.className === 'Channel' ||
-          entity.className === 'Chat'
+          entity &&
+          (entity.className === 'Channel' ||
+          entity.className === 'Chat')
         );
       });
 
@@ -235,6 +240,7 @@ export class DownloadHandler {
       return; // Not waiting for range input
     }
 
+    if (!ctx.message.text) return;
     const input = ctx.message.text.trim();
 
     // Parse input (e.g., "1", "1-20")
@@ -247,8 +253,8 @@ export class DownloadHandler {
         await ctx.reply('❌ Неверный формат. Используйте: 1-20');
         return;
       }
-      startMsg = parseInt(parts[0].trim());
-      endMsg = parseInt(parts[1].trim());
+      startMsg = parseInt(parts[0]?.trim() || '0');
+      endMsg = parseInt(parts[1]?.trim() || '0');
     } else {
       startMsg = parseInt(input);
       endMsg = startMsg;
@@ -299,6 +305,8 @@ export class DownloadHandler {
       // Download each message
       for (let i = 0; i < targetMessages.length; i++) {
         const msg = targetMessages[i];
+        if (!msg || !msg.media) continue;
+
         try {
           const buffer = await client.downloadMedia(msg.media, {});
 
@@ -321,8 +329,8 @@ export class DownloadHandler {
             }
           }
         } catch (downloadError: any) {
-          console.error('Download error for message:', msg.id, downloadError);
-          await ctx.reply(`⚠️ Не удалось скачать сообщение #${msg.id}`);
+          console.error('Download error for message:', msg?.id, downloadError);
+          await ctx.reply(`⚠️ Не удалось скачать сообщение #${msg?.id || 'unknown'}`);
         }
       }
 

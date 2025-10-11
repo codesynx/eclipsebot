@@ -206,6 +206,7 @@ export class AuthHandler {
     if (!ctx.from || !ctx.message || !('text' in ctx.message)) return;
 
     const userId = ctx.from.id;
+    if (!ctx.message.text) return;
     const args = ctx.message.text.split(' ');
 
     if (args.length < 2) {

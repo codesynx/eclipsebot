@@ -91,7 +91,7 @@ export class DatabaseService {
         WHERE user_id = ?
       `);
 
-      query.run(newExpiresAt, paymentId || existingSubscription.lastPaymentId, userId);
+      query.run(newExpiresAt, paymentId || existingSubscription.lastPaymentId || null, userId);
     } else {
       // Create new subscription
       const query = this.db.query(`
